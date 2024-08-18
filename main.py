@@ -1,4 +1,5 @@
 from prettytable import PrettyTable
+import items
 
 def get_number_in_range(min_value, max_value):
   while True:
@@ -15,55 +16,6 @@ def get_number_in_range(min_value, max_value):
 def pressAnyKeyToContinue():
     input("Press any key to continue...")
 
-
-class Item:
-    def __init__(self, name, price, rarity ):
-        self.name = name
-        self.price = price
-        self.rarity = rarity
-    def inspect(self):
-        raise NotImplementedError("Subclasses must implement inspect()")
-
-class Weapon(Item):
-    def __init__(self, name, price, rarity, min_dmg, max_dmg, speed):
-        super().__init__(name,price, rarity)
-        self.min_dmg = min_dmg
-        self.max_dmg = max_dmg
-        self.speed = speed
-    def inspect(self):
-        print(f"Name: {self.name}")
-        print(f"Damage range: {self.min_dmg}-{self.max_dmg}")
-        print(f"Speed: {self.speed}")
-        print(f"Rarity: {self.rarity}")
-        print(f"Price: {self.price}")
-
-
-class Armor(Item): # Types: Head, Chest, Legs
-    def __init__(self, name, price, rarity, type, defense, hp_bonus, attack_bonus):
-        super().__init__(name,price, rarity)
-        self.type = type
-        self.defense = defense
-        self.hp_bonus = hp_bonus
-        self.attack_bonus = attack_bonus
-    def inspect(self):
-        print(f"Name: {self.name}")
-        print(f"Attack bonus: {self.attack_bonus}")
-        print(f"Health bonus: {self.hp_bonus}")
-        print(f"Defense bonus: {self.defense}")
-        print(f"Rarity: {self.rarity}")
-        print(f"Price: {self.price}")
-
-class Potion(Item): # Healing, enemy damaging
-    def __init__(self, name, price, rarity, effect_type, value):
-        super().__init__(name, price, rarity)
-        self.effect_type = effect_type
-        self.value = value
-    def inspect(self):
-        print(f"Name: {self.name}")
-        print(f"Effect type: {self.effect_type}")
-        print(f"Effect value: {self.value}")
-        print(f"Rarity: {self.rarity}")
-        print(f"Price: {self.price}")
 
 
 
@@ -99,83 +51,123 @@ class Inventory:
             table.add_row([item.name, item.price, item.rarity])
         print(table)
 
-    def Interact(self,gear):
+
+        
+class Gear:
+    def __init__(self):
+        self.dictionary = {'Head': None, 'Chest': None, 'Legs': None, 'Weapon': None}
+
+    def equip(self, inventory, item):
+        if self.dictionary[item.type] is not None:
+            inventory.add(self.dictionary[item.type])
+        self.dictionary[item.type] = item
+        print(f"{item.name} has been equipped")
+
+
+    def print(self):
+        table = PrettyTable()
+        table.field_names = ["Armor slot", "Name","Rarity", "Def", "Att", "HP", "MinDmg", "MaxDmg", "Speed"]
+        for key, value in self.dictionary.items():
+            if value is None:
+                table.add_row([key, "", "","","", "", "", "", ""])
+            else:
+                if isinstance(value, Weapon):
+                    table.add_row([key, value.name, value.rarity, value.defense, value.attack_bonus, value.hp_bonus, value.min_dmg, value.max_dmg, value.speed])
+                else:
+                    table.add_row([key, value.name, value.rarity, value.defense, value.attack_bonus, value.hp_bonus, "", "", ""])
+                
+        print(table)
+
+
+class Player:
+    def __init__(self):
+        self.name = ""
+        self.inventory = Inventory()
+        self.gear = Gear()
+        self.hp = 100
+        self.defense = 0
+        self.min_damage = 1
+        self.max_damage = 1
+        self.speed = 1
+    
+
+    def load_stats(self): # defense, attack_bonus, hp_bonus, min_dmg, max_dmg, speed
+        self.hp = 100
+        self.min_damage = 1
+        self.max_damage = 1
+        self.defense = 0
+        self.speed = 0
+        for key, value in self.gear.dictionary.items():
+            if value is not None:
+                self.defense += value.defense
+                self.min_damage += value.attack_bonus
+                self.max_damage += value.attack_bonus
+
+                self.hp += value.hp_bonus
+                
+                if isinstance(value, Weapon):
+                    self.min_damage += value.min_dmg -1
+                    self.max_damage += value.max_dmg -1
+                    self.speed += value.speed
+
+    def print_stats(self):
+        table = PrettyTable()
+        table.field_names = ["Player","HP","Defense", "Damage", "Speed"]
+        table.add_row([self.name,self.hp, self.defense, f"{self.min_damage}-{self.max_damage}", self.speed])
+        print(table)
+
+    def Interact(self):
         while True:
+            self.load_stats()
+
+            print("---Stats---")
+            self.print_stats()
             print("---Gear---")
-            gear.print()
+            self.gear.print()
             print("---Inventory---")
-            self.print()
+            self.inventory.print()
             
             print("Actions: (1)Use/Equip (2)Inspect (3)Destroy (4)Exit")
             action = get_number_in_range(1, 4)
             if action == 4:
                 return # exit Inventory
             
-            if len(self.slots) > 0:
+            if len(self.inventory.slots) > 0:
                 print("---Which Item do you want to interact with?---")
-                itemnum = get_number_in_range(1, len(self.slots))
-                item = self.slots[itemnum -1]
+                itemnum = get_number_in_range(1, len(self.inventory.slots))
+                item = self.inventory.slots[itemnum -1]
                 
                 if action == 1: # todo (armor only for now)
                     if isinstance(item, Armor):
-                        gear.equip(self, item)
-                        self.remove(item)
+                        self.gear.equip(self.inventory, item)
+                        self.inventory.remove(item)
                 
                 if action == 2: # print out attributes
                     item.inspect()
                     pressAnyKeyToContinue()
 
                 if action == 3: # Remove item from inventory
-                    self.remove(item)
+                    self.inventory.remove(item)
                     pressAnyKeyToContinue()
 
             
             print("Inventory empty!")
 
-        
+
+player = Player()
+player.name = input("Whats your characters name: ")
 
 
-
-class Gear:
-    def __init__(self):
-        self.dictionary = {'Head': None, 'Chest': None, 'Legs': None}
-
-    def equip(self, inventory, armor):
-        if self.dictionary[armor.type] is not None:
-            inventory.add(self.dictionary["Head"])
-        self.dictionary[armor.type] = armor
-        print(f"{armor.name} has been equipped")
-
-
-    def print(self):
-        table = PrettyTable()
-        table.field_names = ["Armor slot", "Name", "Def", "Att", "HP"]
-        for key, value in self.dictionary.items():
-            if value is None:
-                table.add_row([key, "", "", "", ""])
-            else:
-                table.add_row([key, value.name, value.defense, value.attack_bonus, value.hp_bonus])
-        print(table)
-
-
-        
-
-
-sword = Weapon("Broadsword", 20, "common", 1,5,2)
-inventory = Inventory()
-gear = Gear()
-
+sword = Weapon("Broadsword", 20, "common", "Weapon",0,0,1,1,5,2)
 headpiece = Armor("Bronze medhelm", 20, "common", "Head", 2, 10, 0)
 headpiece2 = Armor("Iron medhelm", 20, "common", "Head", 2, 10, 0)
 chestpiece = Armor("Adamant platebody", 40, "rare", "Chest", 20, 30, 5)
 
-inventory.add(sword)
-inventory.add(sword)
 
-gear.equip(inventory, headpiece)
+player.inventory.add(sword)
+player.inventory.add(headpiece)
+player.inventory.add(headpiece2)
+player.inventory.add(chestpiece)
 
-gear.equip(inventory, headpiece2)
-gear.equip(inventory, chestpiece)
-
-inventory.Interact(gear)
+player.Interact()
 
