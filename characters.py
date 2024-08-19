@@ -1,5 +1,3 @@
-from pickle import TUPLE
-
 import utility
 import items
 from prettytable import PrettyTable
@@ -108,17 +106,22 @@ class Character:
     
     def take_damage(self, amount):
         self.hp -= amount
-        self.is_dead()
+        print(f"{self.name} took {amount} damage and is now on {self.hp} HP")
+        if self.is_dead():
+            return True
+        return False
 
     def is_dead(self):
         if self.hp > 0:
             return False
         print(f"{self.name} died")
         return True
-        
+
+
 class Enemy(Character):
     def __init__(self, name, hp, defense, min_damage, max_damage):
         super().__init__(name, hp, defense, min_damage, max_damage)
+
 
 class Enemies:
     def __init__(self):
@@ -134,13 +137,16 @@ class Enemies:
         print(f"{name} is not found in the enemy list")
 
 
-class Player:
-    def __init__(self, quest_log):
-        self.defense = None
-        self.max_damage = None
-        self.min_damage = None
-        self.hp = None
-        self.name = None
+class Player(Character):
+    def __init__(self, quest_log, name, hp, defense, min_damage, max_damage):
+        super().__init__(name,hp,defense,min_damage,max_damage)
+
+        self.base_defense = defense
+        self.base_max_damage = max_damage
+        self.base_min_damage = min_damage
+        self.base_hp = hp
+
+        self.name = name
 
         self.inventory_spaces = 28
         self.account_status = "Normal" # Normal / Ironman / Hardcore Ironman / Ultimate Ironman
@@ -153,16 +159,17 @@ class Player:
         self.death_counter = 0
 
     def load_stats(self): # defense, attack_bonus, hp_bonus, min_dmg, max_dmg
-        self.hp = 100
-        self.min_damage = 1
-        self.max_damage = 1
-        self.defense = 0
+        self.hp = self.base_hp
+        self.min_damage = self.min_damage
+        self.max_damage = self.max_damage
+        self.defense = self.base_defense
+
+        # Load stats from gear
         for key, value in self.gear.dictionary.items():
             if value is not None:
                 self.defense += value.defense
                 self.min_damage += value.attack_bonus
                 self.max_damage += value.attack_bonus
-
                 self.hp += value.hp_bonus
                 
                 if isinstance(value, items.Weapon):
