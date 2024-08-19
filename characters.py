@@ -1,36 +1,48 @@
+from pickle import TUPLE
+
 import utility
 import items
 from prettytable import PrettyTable
 
 class Inventory:
-    def __init__(self):
+    def __init__(self, inventory_spaces):
         self.slots = []
+        self.inventory_spaces = inventory_spaces
 
-    def add(self, items: object):
-        if isinstance(items, list):
-            for single_item in items:
-                self.slots.append(single_item)
-                print(f"{single_item.name} has been added to inventory")
-            return
-        self.slots.append(items)
-        print(f"{items.name} has been added to inventory")
+    def add(self, item_list: list | items.Item):
+        if isinstance(item_list, list):
+            if self.how_many_spaces_left() > len(item_list):
+                for single_item in item_list:
+                    self.slots.append(single_item)
+                    print(f"{single_item.name} has been added to inventory")
+                    return
+            print("Not enough space in inventory!")
 
-    def remove(self, item:object):
-        if isinstance(item,list):
-            for i in item:
+        if self.how_many_spaces_left() > 0:
+            self.slots.append(item_list)
+            print(f"{item_list.name} has been added to inventory")
+        print("Not enough space in inventory!")
+        return
+
+    def how_many_spaces_left(self):
+        return self.inventory_spaces - len(self.slots)
+
+    def remove(self, item_list:object):
+        if isinstance(item_list, list):
+            for i in item_list:
                 if i not in self.slots:
-                    print(f"\"{item.name}\" hasnt been found in the inventory")
+                    print(f"\"{item_list.name}\" hasnt been found in the inventory")
                 self.slots.remove(i)
                 print(f"{i.name} has been removed from inventory")
             return
 
-        if item in self.slots:
-            self.slots.remove(item)
-            print(f"{item.name} has been removed from inventory")
+        if item_list in self.slots:
+            self.slots.remove(item_list)
+            print(f"{item_list.name} has been removed from inventory")
             return
-        print(f"\"{item.name}\" hasnt been found in the inventory")
+        print(f"\"{item_list.name}\" hasnt been found in the inventory")
 
-    def removeByName(self, name):
+    def remove_by_name(self, name):
         i = 0
         for item in self.slots:
             if item.name == name:
@@ -69,7 +81,6 @@ class Gear:
         self.dictionary[item.type] = item
         print(f"{item.name} has been equipped")
 
-
     def print(self):
         table = PrettyTable()
         table.field_names = ["Armor slot", "Name","Rarity", "Def", "Att", "HP", "MinDmg", "MaxDmg"]
@@ -79,10 +90,13 @@ class Gear:
             else:
                 if isinstance(value, items.Weapon):
                     table.add_row([key, value.name, value.rarity, value.defense, value.attack_bonus, value.hp_bonus, value.min_dmg, value.max_dmg])
-                else:
+                elif isinstance(value, items.Armor):
                     table.add_row([key, value.name, value.rarity, value.defense, value.attack_bonus, value.hp_bonus, "", ""])
-                
+                else:
+                    raise "Something weird is in your gear that shouldn't be there"
+
         print(table)
+
 
 class Character:
     def __init__(self, name, hp, defense, min_damage, max_damage):
@@ -119,22 +133,24 @@ class Enemies:
         
         print(f"{name} is not found in the enemy list")
 
-# todo     
-class Npc:
-    def __init__(self, dialog):
-        self.dialog = dialog
 
 class Player:
-    def __init__(self, name, quest_log):
-        self.name = name
+    def __init__(self, quest_log):
+        self.defense = None
+        self.max_damage = None
+        self.min_damage = None
+        self.hp = None
+        self.name = None
 
         self.inventory_spaces = 28
         self.account_status = "Normal" # Normal / Ironman / Hardcore Ironman / Ultimate Ironman
 
-        self.inventory = Inventory()
+        self.inventory = Inventory(self.inventory_spaces)
         self.gear = Gear()
         self.load_stats()
         self.quest_log = quest_log
+        self.kill_stats: list[[int, Enemy]] = [()]
+        self.death_counter = 0
 
     def load_stats(self): # defense, attack_bonus, hp_bonus, min_dmg, max_dmg
         self.hp = 100
@@ -159,7 +175,7 @@ class Player:
         table.add_row([self.name,self.hp, self.defense, f"{self.min_damage}-{self.max_damage}"])
         print(table)
 
-    def Interact(self):
+    def interact(self):
         while True:
             self.load_stats()
 
@@ -169,15 +185,13 @@ class Player:
             self.gear.print()
             print("---Inventory---")
             self.inventory.print()
-            
-            print("Actions: (1)Use/Equip (2)Inspect (3)Destroy (4)Exit")
-            action = utility.get_number_in_range(1, 4)
+
+            action = utility.ask_and_get_number_in_range("Actions: (1)Use/Equip (2)Inspect (3)Destroy (4)Exit",1, 4)
             if action == 4:
                 return # exit Inventory
             
             if len(self.inventory.slots) > 0:
-                print("---Which Item do you want to interact with?---")
-                itemnum = utility.get_number_in_range(1, len(self.inventory.slots))
+                itemnum = utility.ask_and_get_number_in_range("---Which Item do you want to interact with?---",1, len(self.inventory.slots))
                 item = self.inventory.slots[itemnum -1]
                 
                 if action == 1: # todo (armor only for now)
@@ -187,11 +201,11 @@ class Player:
                 
                 if action == 2: # print out attributes
                     item.inspect()
-                    utility.pressAnyKeyToContinue()
+                    utility.press_any_key_to_continue()
 
                 if action == 3: # Remove item from inventory
                     self.inventory.remove(item)
-                    utility.pressAnyKeyToContinue()
+                    utility.press_any_key_to_continue()
 
             
             print("Inventory empty!")

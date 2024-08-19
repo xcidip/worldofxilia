@@ -1,28 +1,31 @@
 import items
 import characters
 import quests
+import utility
+from npc import NpcList
 
+
+# Setup (player, item/enemy lists)
 item_list = items.Items()
 enemy_list = characters.Enemies()
 
 quest_log = quests.QuestLog(item_list, enemy_list)
-
-player = characters.Player(item_list,quest_log)
+player = characters.Player(quest_log)
 player.name = input("Whats your characters name: ")
-
-
-sword = items.Weapon("Broadsword", 20, "common", "Weapon",0,0,1,1,5)
-headpiece = items.Armor("Bronze medhelm", 20, "common", "Head", 2, 10, 0)
-headpiece2 = items.Armor("Iron medhelm", 20, "common", "Head", 2, 10, 0)
-chestpiece = items.Armor("Adamant platebody", 40, "rare", "Chest", 20, 30, 5)
+player.account_status = utility.ask_and_get_number_in_range("Choose your account status: (1)Normal (2)Ironman (3)Ultraman (4)Crazyman",1,4)
 
 
 
-player.inventory.add(sword)
-player.inventory.add(headpiece)
-player.inventory.add(headpiece2)
-player.inventory.add(chestpiece)
 
-player.Interact()
+#player.interact()
 
-player.quest_log.print()
+#player.quest_log.print()
+
+npc_list = NpcList()
+
+npc1 = npc_list.lookup("Norwyn")
+
+npc1.talk(player)
+
+
+

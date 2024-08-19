@@ -51,12 +51,13 @@ class Potion(Item): # Healing, enemy damaging
 
 class Items:
     def __init__(self):
-        self.itemlist = [[Item("Fish",5, "common")],
-                    [Weapon("Broadsword",10,"common","Weapon",0,0,0,2,4)]]
+        self.item_list = [[Item("Fish", 5, "common")],
+                          [Weapon("Broadsword",10,"common","Weapon",0,0,0,2,4)],
+                          [Armor("Adamant platebody", 40, "rare", "Chest", 20, 30, 5),Armor("Iron medhelm", 20, "common", "Head", 2, 10, 0),Armor("Bronze medhelm", 20, "common", "Head", 2, 10, 0),Weapon("Broadsword", 20, "common", "Weapon",0,0,1,1,5)]]
         
 
     def lookup(self, name):
-        for row in self.itemlist:
+        for row in self.item_list:
             for element in row:
                 if element.name is name:
                     return element

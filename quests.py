@@ -1,6 +1,7 @@
 import items
 import characters
 from prettytable import PrettyTable
+import npc
 
 # FETCH item quest, KILL number of enemies quest, TALK to someone quest
 class Quest:
@@ -12,14 +13,18 @@ class Quest:
         self.hint = hint
     
     def start_quest(self):
-        self.state = "Started"    
+        if self.state != "Hidden":
+            print("Quest already started/completed!")
+            return
+        self.state = "Started"
+        print(f"{self.name} quest has started")
     
     def complete_quest(self, inventory): # Give reward to player
         self.state = "Completed"
         inventory.add(self.reward)
     
     def check_if_tasks_met(self, inventory):
-        raise("Checking quest completion not implemented")
+        raise"Checking quest completion not implemented"
 
 class FetchQuest(Quest):
     def __init__(self, name, reward, quest_giver_npc, items_to_fetch: list[(int, items.Item)], hint):
@@ -48,32 +53,39 @@ class KillQuest(Quest):
     def check_if_tasks_met(self):
         everything_done = True
         index = 0
-        for enemy in len(self.enemies_to_kill):
-            if (self.enemies_killed[index] < self.enemies_to_kill[index]):
+        for enemy in range(len(self.enemies_to_kill)):
+            if self.enemies_killed[index] < self.enemies_to_kill[index]:
                 everything_done = False   
         if everything_done:
             return True
-        print(f"You havent killed enough enemies required for the completion of {self.name}")
+        print(f"You haven't killed enough enemies required for the completion of {self.name}")
         return False
     
 class TalkQuest(Quest):
-    def __init__(self, name, reward, quest_giver_npc, npcs_to_talk_to: list[(bool, characters.Npc)], hint):
+    def __init__(self, name, reward, quest_giver_npc, npcs_to_talk_to: list[(bool, npc.Npc)], hint):
         super().__init__(name, reward, quest_giver_npc, hint)
         self.npcs_to_talk_to = npcs_to_talk_to
     
     def check_if_tasks_met(self):
         everything_done = True
-        for tuple in self.npcs_to_talk_to:
-            if tuple[0] == False:
+        for task_tuple in self.npcs_to_talk_to:
+            if not task_tuple[0]:
                 everything_done = False
         if everything_done:
             return True
-        print(f"You havent talked to all the NPCs from {self.name}")
+        print(f"You haven't talked to all the NPCs from {self.name}")
         return False
 
 class QuestLog:
     def __init__(self, item_list, enemy_list):
         self.quest_log = [KillQuest("Sheep killer", [item_list.lookup("Fish"), item_list.lookup("Fish")],"Swen", [(5, enemy_list.lookup("Sheep"))],"Go to the sheeps and kill them")]
+
+    def start_quest(self, name):
+        for quest in self.quest_log:
+            if quest.name == name:
+                quest.start_quest()
+                return
+        raise f"{name} quest is not found in the quest log"
 
     def print(self):
         table = PrettyTable()
